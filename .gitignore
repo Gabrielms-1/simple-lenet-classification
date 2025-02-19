@@ -1,5 +1,4 @@
-#.dvc/
+.dvc/
 data/
 .DS_Store
 venv/
-/data

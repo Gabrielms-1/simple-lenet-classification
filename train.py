@@ -33,7 +33,7 @@ class CustomImageDataset(Dataset):
 
     def __getitem__(self, idx):
         # Constrói o caminho completo para a imagem:
-        img_path = os.path.join(self.root_dir, self.annotations.iloc[idx, 0])
+        img_path = self.annotations.iloc[idx, 0]
         # Abre a imagem com PIL e garante que ela tenha 3 canais (RGB):
         image = Image.open(img_path).convert('RGB')
         # Converte a anotação da classe para inteiro:
@@ -54,7 +54,7 @@ transformations = transforms.Compose([
 ])
 
 # Criando instância do dataset e DataLoader:
-csv_file = 'data/skin_cancer.v2i.multiclass/train/_classes.csv'
+csv_file = 'data/skin_cancer.v2i.multiclass/train/processed_classes.csv'
 root_dir = 'data/skin_cancer.v2i.multiclass/train'
 
 dataset = CustomImageDataset(csv_file=csv_file, root_dir=root_dir, transform=transformations)
