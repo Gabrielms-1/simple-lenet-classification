@@ -145,9 +145,10 @@ def train_model(model, dataloader, criterion, optimizer, device, num_epochs=10):
     """
     model.train()  # Coloca o modelo em modo de treinamento
     for epoch in range(num_epochs):
-        # Inicializa a perda acumulada para a época
         running_loss = 0.0
-        # Itera sobre os batches do DataLoader:
+        correct = 0
+        total = 0
+        
         for images, labels in dataloader:
             images = images.to(device)
             labels = labels.to(device)
@@ -155,18 +156,24 @@ def train_model(model, dataloader, criterion, optimizer, device, num_epochs=10):
             optimizer.zero_grad()  # Zera os gradientes para evitar acumulação
             
             outputs = model(images)  # Forward pass: computa as predições
+            _, predicted = torch.max(outputs.data, 1)
             loss = criterion(outputs, labels)  # Calcula a perda
             
             loss.backward()  # Backward pass: computa os gradientes
             optimizer.step()  # Atualiza os pesos
             
             running_loss += loss.item() * images.size(0)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
         
         # Calcula a perda média da época:
         epoch_loss = running_loss / len(dataloader.dataset)
-        print(f"Época {epoch+1}/{num_epochs}, Loss: {epoch_loss:.4f}")
+        epoch_acc = correct / total
+        print(f"Epoch {epoch+1}/{num_epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_acc:.4f}")
 
 # Iniciando o treinamento:
 if __name__ == '__main__':
     num_epochs = 10
     train_model(model, dataloader, criterion, optimizer, device, num_epochs)
+    torch.save(model.state_dict(), 'data/lenet_model.pth')
+    print("Model saved as lenet_model.pth")
