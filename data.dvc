@@ -4,11 +4,3 @@ outs:
   nfiles: 22977
   hash: md5
   path: data
-
-
-
-
-
-
-
-.dvc/cache
