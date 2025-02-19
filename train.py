@@ -175,6 +175,7 @@ def train_model(model, dataloader, criterion, optimizer, device, num_epochs=10):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--epochs', '-e', type=int, default=10)
+    parser.add_argument('--batch_size', '-b', type=int, default=32)
     args = parser.parse_args()
     num_epochs = args.epochs
     train_model(model, dataloader, criterion, optimizer, device, num_epochs)
