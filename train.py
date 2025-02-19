@@ -1,5 +1,5 @@
 # Importando as bibliotecas necessárias:
-import os
+import argparse
 import pandas as pd
 from PIL import Image
 
@@ -173,7 +173,10 @@ def train_model(model, dataloader, criterion, optimizer, device, num_epochs=10):
 
 # Iniciando o treinamento:
 if __name__ == '__main__':
-    num_epochs = 10
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--epochs', '-e', type=int, default=10)
+    args = parser.parse_args()
+    num_epochs = args.epochs
     train_model(model, dataloader, criterion, optimizer, device, num_epochs)
     torch.save(model.state_dict(), 'data/lenet_model.pth')
     print("Model saved as lenet_model.pth")
