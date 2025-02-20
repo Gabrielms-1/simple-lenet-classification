@@ -3,15 +3,15 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from LeNet import LeNet, transformations
 from train import CustomImageDataset
+import argparse
 
-
-def main():
+def main(model_path):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     num_classes = 8 
     model = LeNet(num_classes=num_classes).to(device)
 
-    model.load_state_dict(torch.load('data/lenet_model_2025-02-20_16-25-25.pth', map_location=device))
+    model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval() 
 
     val_dataset = CustomImageDataset(csv_file='data/skin_cancer.v2i.multiclass/test/processed_classes.csv',
@@ -46,4 +46,7 @@ def main():
     print(f"Val Loss: {val_loss:.4f}, Val Accuracy: {val_accuracy:.2f}%")
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model', '-m', type=str, required=True)
+    args = parser.parse_args()
+    main(args.model)
