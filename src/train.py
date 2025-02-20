@@ -42,11 +42,18 @@ class CustomImageDataset(Dataset):
         return image, label, img_path
 
 
-csv_file = 'data/skin_cancer.v2i.multiclass/train/processed_classes.csv'
-root_dir = 'data/skin_cancer.v2i.multiclass/train'
+train_csv_file = 'data/skin_cancer.v2i.multiclass/train/processed_classes.csv'
+train_root_dir = 'data/skin_cancer.v2i.multiclass/train'
 
-dataset = CustomImageDataset(csv_file=csv_file, root_dir=root_dir, transform=transformations)
-dataloader = DataLoader(dataset, batch_size=64, shuffle=True, num_workers=8)
+val_csv_file = 'data/skin_cancer.v2i.multiclass/valid/processed_classes.csv'
+val_root_dir = 'data/skin_cancer.v2i.multiclass/valid'
+
+
+train_dataset = CustomImageDataset(csv_file=train_csv_file, root_dir=train_root_dir, transform=transformations)
+train_dataloader = DataLoader(train_dataset, batch_size=64, shuffle=True, num_workers=8)
+
+val_dataset = CustomImageDataset(csv_file=val_csv_file, root_dir=val_root_dir, transform=transformations)
+val_dataloader = DataLoader(val_dataset, batch_size=64, shuffle=False, num_workers=8)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', '-e', type=int, default=10)
@@ -70,6 +77,31 @@ model.to(device)
 
 criterion = nn.CrossEntropyLoss()  
 optimizer = optim.Adam(model.parameters(), wandb.config.learning_rate)
+
+def evaluate_model(model, dataloader, device):
+    model.eval()
+    running_loss = 0.0
+    correct = 0
+    total = 0
+    
+    with torch.no_grad():
+        for images, labels, _ in dataloader:
+            images = images.to(device)
+            labels = labels.to(device)
+            
+            outputs = model(images)  
+            _, predicted = torch.max(outputs.data, 1)
+            loss = criterion(outputs, labels)  
+            
+            running_loss += loss.item() * images.size(0)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+            
+        epoch_loss = running_loss / len(dataloader.dataset)
+        epoch_acc = correct / total
+ 
+        return epoch_loss, epoch_acc
+
 
 def train_model(model, dataloader, criterion, optimizer, device):
     """
@@ -117,10 +149,14 @@ def train_model(model, dataloader, criterion, optimizer, device):
         
         print(f"Epoch {epoch+1}/{wandb.config.epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_acc:.4f}")
 
+        val_loss, val_acc = evaluate_model(model, val_dataloader, device)
+
         wandb.log({
             "epoch": epoch+1,
             "loss": epoch_loss,
-            "accuracy": epoch_acc
+            "accuracy": epoch_acc,
+            "val_loss": val_loss,
+            "val_accuracy": val_acc
         })
 
     return train_loss, train_acc
@@ -155,7 +191,7 @@ def plot_metrics(train_losses, train_accuracies):
 if __name__ == '__main__':
     
     
-    train_loss, train_acc = train_model(model, dataloader, criterion, optimizer, device)
+    train_loss, train_acc = train_model(model, train_dataloader, criterion, optimizer, device)
     
     torch.save(model.state_dict(), 'data/lenet_model.pth')
     
