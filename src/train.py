@@ -13,7 +13,7 @@ from sklearn.metrics import recall_score, f1_score
 import os
 
 from LeNet import LeNet, transformations
-from config import *
+from src.config import *
 
 class CustomImageDataset(Dataset):
     """
