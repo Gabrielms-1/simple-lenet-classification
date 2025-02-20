@@ -1,29 +1,28 @@
-# Importando as bibliotecas necessárias:
+# Importing necessary libraries:
 import argparse
 import pandas as pd
 from PIL import Image
 import matplotlib.pyplot as plt
-import random
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
-
+import time
 import wandb
 
 from LeNet import LeNet, transformations
 
 class CustomImageDataset(Dataset):
     """
-    Um dataset customizado que carrega imagens e suas respectivas classes a partir de um CSV.
+    A custom dataset that loads images and their respective classes from a CSV.
     
-    Parâmetros:
-        csv_file (str): Caminho para o arquivo CSV com as anotações. 
-        root_dir (str): Diretório onde as imagens estão armazenadas.
-        transform (callable, opcional): Transformações a serem aplicadas nas imagens.
+    Parameters:
+        csv_file (str): Path to the CSV file with annotations. 
+        root_dir (str): Directory where images are stored.
+        transform (callable, optional): Transformations to be applied to the images.
     """
     def __init__(self, csv_file, root_dir, transform=None):
-        # Lê o CSV com pandas:
+        # Read the CSV with pandas:
         self.annotations = pd.read_csv(csv_file)
         self.root_dir = root_dir
         self.transform = transform
@@ -105,14 +104,14 @@ def evaluate_model(model, dataloader, device):
 
 def train_model(model, dataloader, criterion, optimizer, device):
     """
-    Função que executa o loop de treinamento.
+    Function that executes the training loop.
     
-    Parâmetros:
-        model (nn.Module): Modelo a ser treinado.
-        dataloader (DataLoader): DataLoader com os dados de treinamento.
-        criterion: Função de perda.
-        optimizer: Otimizador para atualizar os pesos.
-        device: Dispositivo para computação (CPU ou GPU).
+    Parameters:
+        model (nn.Module): Model to be trained.
+        dataloader (DataLoader): DataLoader with training data.
+        criterion: Loss function.
+        optimizer: Optimizer to update weights.
+        device: Device for computation (CPU or GPU).
     """
     
     train_loss = []
@@ -168,22 +167,22 @@ def plot_metrics(train_losses, train_accuracies):
     
     plt.subplot(1, 2, 1)
     plt.plot(epochs, train_losses, 'b-o', label='Train Loss')
-    plt.title('Curva de Loss durante o Treinamento')
-    plt.xlabel('Época')
+    plt.title('Loss Curve during Training')
+    plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.legend()
     
     plt.subplot(1, 2, 2)
     plt.plot(epochs, train_accuracies, 'r-o', label='Train Accuracy')
-    plt.title('Curva de Acurácia durante o Treinamento')
-    plt.xlabel('Época')
-    plt.ylabel('Acurácia')
+    plt.title('Accuracy Curve during Training')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
     plt.legend()
     
     plt.tight_layout()
     plt.savefig("training_metrics.png")
     plt.show()
-    print("Plot das métricas salvo como training_metrics.png")  
+    print("Metrics plot saved as training_metrics.png")  
 
 
 
@@ -192,10 +191,10 @@ if __name__ == '__main__':
     
     
     train_loss, train_acc = train_model(model, train_dataloader, criterion, optimizer, device)
+    current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
+    torch.save(model.state_dict(), f'data/lenet_model_{current_time}.pth')
     
-    torch.save(model.state_dict(), 'data/lenet_model.pth')
-    
-    print("Model saved as lenet_model.pth")
+    print(f"Model saved as lenet_model_{current_time}.pth")
 
     plot_metrics(train_loss, train_acc)
     wandb.finish()
