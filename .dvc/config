@@ -2,4 +2,5 @@
     remote = storage
 ['remote "storage"']
     url = s3://brbh-datascience-data/simple-lenet-classification/dvc_data/
-    profile = syngenta
+    profile = default
+    region = us-east-2
