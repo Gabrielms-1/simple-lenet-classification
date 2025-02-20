@@ -9,6 +9,8 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 import time
 import wandb
+from sklearn.metrics import recall_score, f1_score
+import os
 
 from LeNet import LeNet, transformations
 
@@ -83,6 +85,8 @@ def evaluate_model(model, dataloader, device):
     running_loss = 0.0
     correct = 0
     total = 0
+    all_preds = []
+    all_labels = []
     
     with torch.no_grad():
         for images, labels, _ in dataloader:
@@ -97,10 +101,16 @@ def evaluate_model(model, dataloader, device):
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
             
+            all_preds.extend(predicted.cpu().numpy())
+            all_labels.extend(labels.cpu().numpy())
+            
         epoch_loss = running_loss / len(dataloader.dataset)
         epoch_acc = correct / total
  
-        return epoch_loss, epoch_acc
+        recall = recall_score(all_labels, all_preds, average='macro')
+        f1 = f1_score(all_labels, all_preds, average='macro')
+
+        return epoch_loss, epoch_acc, recall, f1
 
 
 def train_model(model, dataloader, criterion, optimizer, device):
@@ -151,15 +161,19 @@ def train_model(model, dataloader, criterion, optimizer, device):
         
         print(f"Epoch {i+1}/{wandb.config.epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_acc:.4f}")
 
-        val_loss, val_acc = evaluate_model(model, val_dataloader, device)
+        val_loss, val_acc, val_recall, val_f1 = evaluate_model(model, val_dataloader, device)
 
         wandb.log({
             "epoch": i+1,
             "loss": epoch_loss,
             "accuracy": epoch_acc,
             "val_loss": val_loss,
-            "val_accuracy": val_acc
+            "val_accuracy": val_acc,
+            "val_recall": val_recall,
+            "val_f1": val_f1
         })
+
+        print(f"Validation Recall: {val_recall:.4f}, F1 Score: {val_f1:.4f}")
 
         checkpoint_path = f'data/checkpoints/lenet_model_{current_time}_checkpoint_{i+1}.pth'
 
@@ -208,6 +222,8 @@ def plot_metrics(train_losses, train_accuracies):
 
 if __name__ == '__main__':
     
+    if not os.path.exists('data/checkpoints/'):
+        os.makedirs('data/checkpoints/')
     
     train_loss, train_acc = train_model(model, train_dataloader, criterion, optimizer, device)
     torch.save(model.state_dict(), f'data/checkpoints/lenet_model_{current_time}.pth')
