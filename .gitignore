@@ -1,6 +1,10 @@
+*__pycache__/
 .dvc/
 data/
 .DS_Store
 venv/
 /data
 wandb/
+*.jpg
+*.jpeg
+*.png
