@@ -163,6 +163,7 @@ def train_model(model, dataloader, criterion, optimizer, device):
 
         val_loss, val_acc, val_recall, val_f1 = evaluate_model(model, val_dataloader, device)
 
+
         wandb.log({
             "epoch": i+1,
             "loss": epoch_loss,
@@ -192,6 +193,25 @@ def train_model(model, dataloader, criterion, optimizer, device):
                 checkpoint_path
             )
             print(f"Checkpoint {i+1} saved as {checkpoint_path}")
+
+        if val_f1 > best_f1:
+            best_f1 = val_f1
+            checkpoint_path = f'data/checkpoints/lenet_model_{current_time}_checkpoint_best_f1.pth'
+            torch.save(
+                {
+                    "model_state_dict": model.state_dict(), 
+                    "epoch": i+1,
+                    "loss": epoch_loss,
+                    "accuracy": epoch_acc,
+                    "val_loss": val_loss,
+                    "val_accuracy": val_acc,
+                    "optimizer_state_dict": optimizer.state_dict(), 
+                    "wandb_config": wandb.config
+                }, 
+                checkpoint_path
+            )
+            print(f"Best F1 checkpoint saved as {checkpoint_path}")
+
 
     return train_loss, train_acc
 
