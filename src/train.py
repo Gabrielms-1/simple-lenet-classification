@@ -47,6 +47,7 @@ train_root_dir = 'data/skin_cancer.v2i.multiclass/train'
 val_csv_file = 'data/skin_cancer.v2i.multiclass/valid/processed_classes.csv'
 val_root_dir = 'data/skin_cancer.v2i.multiclass/valid'
 
+current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
 
 train_dataset = CustomImageDataset(csv_file=train_csv_file, root_dir=train_root_dir, transform=transformations)
 train_dataloader = DataLoader(train_dataset, batch_size=64, shuffle=True, num_workers=8)
@@ -119,12 +120,12 @@ def train_model(model, dataloader, criterion, optimizer, device):
     
     model.train()  
        
-    for epoch in range(wandb.config.epochs):
+    for i in range(wandb.config.epochs):
         running_loss = 0.0
         correct = 0
         total = 0
 
-        for images, labels, path in dataloader:
+        for images, labels, _ in dataloader:
             images = images.to(device)
             labels = labels.to(device)
             
@@ -139,24 +140,44 @@ def train_model(model, dataloader, criterion, optimizer, device):
             running_loss += loss.item() * images.size(0)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
-            
+
+        
+
         epoch_loss = running_loss / len(dataloader.dataset)
         epoch_acc = correct / total
         
         train_loss.append(epoch_loss)
         train_acc.append(epoch_acc)
         
-        print(f"Epoch {epoch+1}/{wandb.config.epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_acc:.4f}")
+        print(f"Epoch {i+1}/{wandb.config.epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_acc:.4f}")
 
         val_loss, val_acc = evaluate_model(model, val_dataloader, device)
 
         wandb.log({
-            "epoch": epoch+1,
+            "epoch": i+1,
             "loss": epoch_loss,
             "accuracy": epoch_acc,
             "val_loss": val_loss,
             "val_accuracy": val_acc
         })
+
+        checkpoint_path = f'data/checkpoints/lenet_model_{current_time}_checkpoint_{i+1}.pth'
+
+        if (i + 1) % 10 == 0:
+            torch.save(
+                {
+                    "model_state_dict": model.state_dict(), 
+                    "epoch": i+1,
+                    "loss": epoch_loss,
+                    "accuracy": epoch_acc,
+                    "val_loss": val_loss,
+                    "val_accuracy": val_acc,
+                    "optimizer_state_dict": optimizer.state_dict(),
+                    "wandb_config": wandb.config
+                }, 
+                checkpoint_path
+            )
+            print(f"Checkpoint {i+1} saved as {checkpoint_path}")
 
     return train_loss, train_acc
 
@@ -185,14 +206,11 @@ def plot_metrics(train_losses, train_accuracies):
     print("Metrics plot saved as training_metrics.png")  
 
 
-
-
 if __name__ == '__main__':
     
     
     train_loss, train_acc = train_model(model, train_dataloader, criterion, optimizer, device)
-    current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
-    torch.save(model.state_dict(), f'data/lenet_model_{current_time}.pth')
+    torch.save(model.state_dict(), f'data/checkpoints/lenet_model_{current_time}.pth')
     
     print(f"Model saved as lenet_model_{current_time}.pth")
 
