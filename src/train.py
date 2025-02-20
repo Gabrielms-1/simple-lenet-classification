@@ -2,6 +2,7 @@
 import argparse
 import pandas as pd
 from PIL import Image
+import matplotlib.pyplot as plt
 
 import torch
 import torch.nn as nn            # Módulo para construir redes neurais
@@ -54,7 +55,7 @@ csv_file = 'data/skin_cancer.v2i.multiclass/train/processed_classes.csv'
 root_dir = 'data/skin_cancer.v2i.multiclass/train'
 
 dataset = CustomImageDataset(csv_file=csv_file, root_dir=root_dir, transform=transformations)
-dataloader = DataLoader(dataset, batch_size=32, shuffle=True, num_workers=8)
+dataloader = DataLoader(dataset, batch_size=64, shuffle=True, num_workers=8)
 
 # Definindo a arquitetura LeNet:
 
@@ -89,6 +90,10 @@ def train_model(model, dataloader, criterion, optimizer, device, num_epochs=10):
         device: Dispositivo para computação (CPU ou GPU).
         num_epochs (int): Número de épocas de treinamento.
     """
+    
+    train_loss = []
+    train_acc = []
+    
     model.train()  # Coloca o modelo em modo de treinamento
     for epoch in range(num_epochs):
         running_loss = 0.0
@@ -104,26 +109,64 @@ def train_model(model, dataloader, criterion, optimizer, device, num_epochs=10):
             outputs = model(images)  # Forward pass: computa as predições
             _, predicted = torch.max(outputs.data, 1)
             loss = criterion(outputs, labels)  # Calcula a perda
-            
             loss.backward()  # Backward pass: computa os gradientes
             optimizer.step()  # Atualiza os pesos
             
             running_loss += loss.item() * images.size(0)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
-        
         # Calcula a perda média da época:
         epoch_loss = running_loss / len(dataloader.dataset)
         epoch_acc = correct / total
+        
+        train_loss.append(epoch_loss)
+        train_acc.append(epoch_acc)
+        
         print(f"Epoch {epoch+1}/{num_epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_acc:.4f}")
+
+    return train_loss, train_acc
+
+def plot_metrics(train_losses, train_accuracies, num_epochs):
+    epochs = range(1, num_epochs + 1)
+    
+    plt.figure(figsize=(12, 5))
+    
+    # Plot da Loss
+    plt.subplot(1, 2, 1)
+    plt.plot(epochs, train_losses, 'b-o', label='Train Loss')
+    plt.title('Curva de Loss durante o Treinamento')
+    plt.xlabel('Época')
+    plt.ylabel('Loss')
+    plt.legend()
+    
+    # Plot da Acurácia
+    plt.subplot(1, 2, 2)
+    plt.plot(epochs, train_accuracies, 'r-o', label='Train Accuracy')
+    plt.title('Curva de Acurácia durante o Treinamento')
+    plt.xlabel('Época')
+    plt.ylabel('Acurácia')
+    plt.legend()
+    
+    # Salva o plot em um arquivo
+    plt.tight_layout()
+    plt.savefig("training_metrics.png")
+    plt.show()
+    print("Plot das métricas salvo como training_metrics.png")  
 
 # Iniciando o treinamento:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--epochs', '-e', type=int, default=10)
-    parser.add_argument('--batch_size', '-b', type=int, default=32)
+    parser.add_argument('--batch_size', '-b', type=int, default=64)
+    
     args = parser.parse_args()
+    
     num_epochs = args.epochs
-    train_model(model, dataloader, criterion, optimizer, device, num_epochs)
+    
+    train_loss, train_acc = train_model(model, dataloader, criterion, optimizer, device, num_epochs)
+    
     torch.save(model.state_dict(), 'data/lenet_model.pth')
+    
     print("Model saved as lenet_model.pth")
+
+    plot_metrics(train_loss, train_acc, num_epochs)
