@@ -13,6 +13,7 @@ from sklearn.metrics import recall_score, f1_score
 import os
 
 from LeNet import LeNet, transformations
+from config import *
 
 class CustomImageDataset(Dataset):
     """
@@ -42,45 +43,17 @@ class CustomImageDataset(Dataset):
         
         return image, label, img_path
 
+def create_datasets(train_csv_file, train_root_dir, val_csv_file, val_root_dir, transform):
+    train_dataset = CustomImageDataset(csv_file=train_csv_file, root_dir=train_root_dir, transform=transform)
+    val_dataset = CustomImageDataset(csv_file=val_csv_file, root_dir=val_root_dir, transform=transform)
+    return train_dataset, val_dataset
 
-train_csv_file = 'data/skin_cancer.v2i.multiclass/train/processed_classes.csv'
-train_root_dir = 'data/skin_cancer.v2i.multiclass/train'
+def create_dataloaders(train_dataset, val_dataset, batch_size):
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=8)
+    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=8)
+    return train_dataloader, val_dataloader
 
-val_csv_file = 'data/skin_cancer.v2i.multiclass/valid/processed_classes.csv'
-val_root_dir = 'data/skin_cancer.v2i.multiclass/valid'
-
-current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
-
-train_dataset = CustomImageDataset(csv_file=train_csv_file, root_dir=train_root_dir, transform=transformations)
-train_dataloader = DataLoader(train_dataset, batch_size=64, shuffle=True, num_workers=8)
-
-val_dataset = CustomImageDataset(csv_file=val_csv_file, root_dir=val_root_dir, transform=transformations)
-val_dataloader = DataLoader(val_dataset, batch_size=64, shuffle=False, num_workers=8)
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--epochs', '-e', type=int, default=10)
-parser.add_argument('--batch_size', '-b', type=int, default=64)
-args = parser.parse_args()
-
-wandb.init(
-project="skin-cancer-classification",
-config={
-    "epochs": args.epochs,
-    "batch_size": args.batch_size,
-    "learning_rate": 0.001
-    }
-)
-
-num_classes = 8  
-model = LeNet(num_classes=num_classes)
-
-device = torch.device("cpu")
-model.to(device)
-
-criterion = nn.CrossEntropyLoss()  
-optimizer = optim.Adam(model.parameters(), wandb.config.learning_rate)
-
-def evaluate_model(model, dataloader, device):
+def evaluate_model(model, dataloader, criterion, device):
     model.eval()
     running_loss = 0.0
     correct = 0
@@ -112,8 +85,7 @@ def evaluate_model(model, dataloader, device):
 
         return epoch_loss, epoch_acc, recall, f1
 
-
-def train_model(model, dataloader, criterion, optimizer, device):
+def train_model(model, dataloader, criterion, optimizer, device, val_dataloader):
     """
     Function that executes the training loop.
     
@@ -129,6 +101,7 @@ def train_model(model, dataloader, criterion, optimizer, device):
     train_acc = []
     
     model.train()  
+    best_f1 = 0
        
     for i in range(wandb.config.epochs):
         running_loss = 0.0
@@ -161,7 +134,7 @@ def train_model(model, dataloader, criterion, optimizer, device):
         
         print(f"Epoch {i+1}/{wandb.config.epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_acc:.4f}")
 
-        val_loss, val_acc, val_recall, val_f1 = evaluate_model(model, val_dataloader, device)
+        val_loss, val_acc, val_recall, val_f1 = evaluate_model(model, val_dataloader, criterion, device)
 
 
         wandb.log({
@@ -176,7 +149,7 @@ def train_model(model, dataloader, criterion, optimizer, device):
 
         print(f"Validation Recall: {val_recall:.4f}, F1 Score: {val_f1:.4f}")
 
-        checkpoint_path = f'data/checkpoints/lenet_model_{current_time}_checkpoint_{i+1}.pth'
+        checkpoint_path = f'{checkpoint_dir}lenet_model_{current_time}_checkpoint_{i+1}.pth'
 
         if (i + 1) % 10 == 0:
             torch.save(
@@ -196,7 +169,7 @@ def train_model(model, dataloader, criterion, optimizer, device):
 
         if val_f1 > best_f1:
             best_f1 = val_f1
-            checkpoint_path = f'data/checkpoints/lenet_model_{current_time}_checkpoint_best_f1.pth'
+            checkpoint_path = f'{checkpoint_dir}lenet_model_{current_time}_checkpoint_best_f1.pth'
             torch.save(
                 {
                     "model_state_dict": model.state_dict(), 
@@ -239,16 +212,42 @@ def plot_metrics(train_losses, train_accuracies):
     plt.show()
     print("Metrics plot saved as training_metrics.png")  
 
+def main(args):
+    wandb.init(
+        project=wandb_project,
+        name=f"lenet_model_{current_time}",
+        config={
+            "epochs": args.epochs,
+            "batch_size": args.batch_size,
+            "learning_rate": learning_rate
+        }
+    )
 
-if __name__ == '__main__':
-    
-    if not os.path.exists('data/checkpoints/'):
-        os.makedirs('data/checkpoints/')
-    
-    train_loss, train_acc = train_model(model, train_dataloader, criterion, optimizer, device)
-    torch.save(model.state_dict(), f'data/checkpoints/lenet_model_{current_time}.pth')
-    
+    train_dataset, val_dataset = create_datasets(train_csv_file, train_root_dir, val_csv_file, val_root_dir, transformations)
+    train_dataloader, val_dataloader = create_dataloaders(train_dataset, val_dataset, wandb.config.batch_size)
+
+    model = LeNet(num_classes=num_classes)
+    device = torch.device("cpu")
+    model.to(device)
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), wandb.config.learning_rate)
+
+    if not os.path.exists(checkpoint_dir):
+        os.makedirs(checkpoint_dir)
+
+    train_loss, train_acc = train_model(model, train_dataloader, criterion, optimizer, device, val_dataloader)
+    torch.save(model.state_dict(), f'{checkpoint_dir}lenet_model_{current_time}.pth')
+
     print(f"Model saved as lenet_model_{current_time}.pth")
 
     plot_metrics(train_loss, train_acc)
     wandb.finish()
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--epochs', '-e', type=int, default=epochs)
+    parser.add_argument('--batch_size', '-b', type=int, default=batch_size)
+    args = parser.parse_args()
+
+    main(args)
