@@ -1,0 +1,33 @@
+{
+  "os": "macOS-15.2-x86_64-i386-64bit",
+  "python": "CPython 3.9.6",
+  "startedAt": "2025-02-20T03:25:08.798631Z",
+  "program": "<python with no main file>",
+  "git": {
+    "remote": "git@github.com:Gabrielms-1/simple-lenet-classification.git",
+    "commit": "79589331b621caffaacc9615ea22813ead081839"
+  },
+  "email": "gabriels.msousa@gmail.com",
+  "root": "/Users/gabrielmendessouza/Documents/personal_projects/simple-lenet-classification",
+  "host": "STRIDER-334.local",
+  "executable": "/Users/gabrielmendessouza/Documents/personal_projects/simple-lenet-classification/venv/bin/python",
+  "cpu_count": 4,
+  "cpu_count_logical": 8,
+  "disk": {
+    "/": {
+      "total": "499963174912",
+      "used": "472647995392"
+    },
+    "/System/Volumes/Data": {
+      "total": "499963174912",
+      "used": "472647995392"
+    }
+  },
+  "memory": {
+    "total": "17179869184"
+  },
+  "cpu": {
+    "count": 4,
+    "countLogical": 8
+  }
+}

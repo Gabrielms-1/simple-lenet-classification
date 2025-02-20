@@ -1,0 +1,15 @@
+{"time":"2025-02-20T00:25:00.275286-03:00","level":"INFO","msg":"stream: starting","core version":"0.19.6","symlink path":"/Users/gabrielmendessouza/Documents/personal_projects/simple-lenet-classification/wandb/run-20250220_002458-svh6oai0/logs/debug-core.log"}
+{"time":"2025-02-20T00:25:00.29473-03:00","level":"INFO","msg":"created new stream","id":"svh6oai0"}
+{"time":"2025-02-20T00:25:00.294845-03:00","level":"INFO","msg":"stream: started","id":"svh6oai0"}
+{"time":"2025-02-20T00:25:00.294903-03:00","level":"INFO","msg":"writer: Do: started","stream_id":"svh6oai0"}
+{"time":"2025-02-20T00:25:00.294986-03:00","level":"INFO","msg":"handler: started","stream_id":"svh6oai0"}
+{"time":"2025-02-20T00:25:00.295086-03:00","level":"INFO","msg":"sender: started","stream_id":"svh6oai0"}
+{"time":"2025-02-20T00:25:00.664701-03:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-02-20T00:25:21.91027-03:00","level":"INFO","msg":"stream: closing","id":"svh6oai0"}
+{"time":"2025-02-20T00:25:21.910431-03:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-02-20T00:25:21.91077-03:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-02-20T00:25:22.595864-03:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-02-20T00:25:22.862091-03:00","level":"INFO","msg":"handler: closed","stream_id":"svh6oai0"}
+{"time":"2025-02-20T00:25:22.862216-03:00","level":"INFO","msg":"writer: Close: closed","stream_id":"svh6oai0"}
+{"time":"2025-02-20T00:25:22.862655-03:00","level":"INFO","msg":"sender: closed","stream_id":"svh6oai0"}
+{"time":"2025-02-20T00:25:22.862708-03:00","level":"INFO","msg":"stream: closed","id":"svh6oai0"}
