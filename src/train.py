@@ -1,75 +1,17 @@
 # Importing necessary libraries:
 import argparse
-import pandas as pd
-from PIL import Image
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 import time
-#import wandb
+import wandb
 from sklearn.metrics import recall_score, f1_score
 import os
-import glob
+from data_loader import FolderBasedDataset
+from LeNet import LeNet
 
-from LeNet import LeNet, transformations
-
-class CustomImageDataset(Dataset):
-    """
-    A custom dataset that loads images and their respective classes from a CSV.
-    
-    Parameters:
-        csv_file (str): Path to the CSV file with annotations. 
-        root_dir (str): Directory where images are stored.
-        transform (callable, optional): Transformations to be applied to the images.
-    """
-    def __init__(self, root_dir, transform=None):
-        self.images = self.get_image_path(root_dir)
-        self.annotations = self.get_labels(root_dir)
-        self.root_dir = root_dir
-        self.transform = transform
-
-        self.label_map_to_int = {label: i for i, label in enumerate(sorted(set(label for label in self.annotations)))}
-        self.int_to_label_map = {i: label for label, i in self.label_map_to_int.items()}
-
-    def __len__(self):
-        return len(self.images)
-
-    def __getitem__(self, idx):
-        img_path = self.images[idx]
-        image = Image.open(img_path).convert('RGB')
-        label = (img_path).split("/")[-2]
-        
-        label = self.label_map_to_int[label]
-
-        if self.transform:
-            image = self.transform(image)
-        
-        return image, label, img_path
-
-    def get_labels(self, root_dir):
-        all_items = glob.glob(os.path.join(root_dir, '**', '*', '*.jpg'), recursive=True)
-        labels = [item.split("/")[-2] for item in all_items]
-        
-        return labels
-
-    def get_image_path(self, root_dir):
-        all_items = glob.glob(os.path.join(root_dir, '**', '*', '*.jpg'), recursive=True)
-        
-        return all_items
-
-def create_datasets(train_dir, val_dir, transform):
-    train_dataset = CustomImageDataset(train_dir, transform=transform)
-    val_dataset = CustomImageDataset(val_dir, transform=transform)
-    
-    return train_dataset, val_dataset
-
-def create_dataloaders(train_dataset, val_dataset, batch_size):
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=8)
-    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=8)
-    
-    return train_dataloader, val_dataloader
 
 def evaluate_model(model, dataloader, criterion, device):
     model.eval()
@@ -98,6 +40,7 @@ def evaluate_model(model, dataloader, criterion, device):
         epoch_loss = running_loss / len(dataloader.dataset)
         epoch_acc = correct / total
  
+
         recall = recall_score(all_labels, all_preds, average='macro')
         f1 = f1_score(all_labels, all_preds, average='macro')
 
@@ -115,9 +58,11 @@ def train_model(model, dataloader, criterion, optimizer, device, val_dataloader)
         device: Device for computation (CPU or GPU).
     """
     
-    train_loss = []
-    train_acc = []
-    
+    train_losses = []
+    train_accuracies = []
+    val_losses = []
+    val_accuracies = []
+
     model.train()  
     best_f1 = 0
        
@@ -145,27 +90,26 @@ def train_model(model, dataloader, criterion, optimizer, device, val_dataloader)
         epoch_loss = running_loss / len(dataloader.dataset)
         epoch_acc = correct / total
         
-        train_loss.append(epoch_loss)
-        train_acc.append(epoch_acc)
+        train_losses.append(epoch_loss)
+        train_accuracies.append(epoch_acc)
         
         print(f"Epoch {i+1}/{args.epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_acc:.4f}")
 
         val_loss, val_acc, val_recall, val_f1 = evaluate_model(model, val_dataloader, criterion, device)
+        val_losses.append(val_loss)
+        val_accuracies.append(val_acc)
 
+        wandb.log({
+            "epoch": i+1,
+            "loss": epoch_loss,
+            "accuracy": epoch_acc,
+            "val_loss": val_loss,
+            "val_accuracy": val_acc,
+            "val_recall": val_recall,
+            "val_f1": val_f1
+        })
 
-        # wandb.log({
-        #     "epoch": i+1,
-        #     "loss": epoch_loss,
-        #     "accuracy": epoch_acc,
-        #     "val_loss": val_loss,
-        #     "val_accuracy": val_acc,
-        #     "val_recall": val_recall,
-        #     "val_f1": val_f1
-        # })
-
-        print(f"Validation Recall: {val_recall:.4f}, F1 Score: {val_f1:.4f}")
-
-        # checkpoint_path = f"{args.checkpoint_dir}lenet_model_{args.current_time}_checkpoint_{i+1}.pth"
+        print(f"Validation Loss: {val_loss:.4f}, Validation Accuracy: {val_acc:.4f}, Validation Recall: {val_recall:.4f}, Validation F1: {val_f1:.4f}")
 
         if (i + 1) % 10 == 0:
             torch.save(
@@ -178,79 +122,105 @@ def train_model(model, dataloader, criterion, optimizer, device, val_dataloader)
                     "val_accuracy": val_acc,
                     "optimizer_state_dict": optimizer.state_dict(),
                 }, 
-                f"/opt/ml/model/lenet_model_{args.current_time}_checkpoint_{i+1}.pth"
+                os.path.join(args.checkpoint_dir, f"lenet_model_{i+1}.pth")
             )
-            print(f"Checkpoint {i+1} saved as /opt/ml/model/lenet_model_{args.current_time}_checkpoint_{i+1}.pth")
+            print(f"Checkpoint {i+1} saved as {os.path.join(args.checkpoint_dir, f'lenet_model_{i+1}.pth')}")
 
-        # if val_f1 > best_f1:
-        #     best_f1 = val_f1
-        #     checkpoint_path = f"{args.checkpoint_dir}lenet_model_{args.current_time}_checkpoint_best_f1.pth"
-        #     torch.save(
-        #         {
-        #             "model_state_dict": model.state_dict(), 
-        #             "epoch": i+1,
-        #             "loss": epoch_loss,
-        #             "accuracy": epoch_acc,
-        #             "val_loss": val_loss,
-        #             "val_accuracy": val_acc,
-        #             "optimizer_state_dict": optimizer.state_dict(), 
-        #             "wandb_config": wandb.config
-        #         }, 
-        #         checkpoint_path
-        #     )
-        #     print(f"Best F1 checkpoint saved as {checkpoint_path}")
+        if val_f1 > best_f1:
+            best_f1 = val_f1
+            checkpoint_path = os.path.join(args.checkpoint_dir, "lenet_model_best_f1.pth")
+            torch.save(
+                {
+                    "model_state_dict": model.state_dict(), 
+                    "epoch": i+1,
+                    "loss": epoch_loss,
+                    "accuracy": epoch_acc,
+                    "val_loss": val_loss,
+                    "val_accuracy": val_acc,
+                    "optimizer_state_dict": optimizer.state_dict(), 
+                    "wandb_config": wandb.config
+                }, 
+                checkpoint_path
+            )
+            print(f"Best F1 checkpoint saved as {checkpoint_path}")
 
 
-    return train_loss, train_acc, val_loss, val_acc, val_recall, val_f1
+    return train_losses, train_accuracies, val_losses, val_accuracies, val_recall, val_f1
 
-def plot_metrics(train_losses, train_accuracies):
+def create_datasets(train_dir, val_dir, resize):
+    train_dataset = FolderBasedDataset(train_dir, resize=resize)
+    val_dataset = FolderBasedDataset(val_dir, resize=resize)
+    
+    return train_dataset, val_dataset
+
+def create_dataloaders(train_dataset, val_dataset, batch_size):
+    train_dataloader = DataLoader(
+        train_dataset, 
+        batch_size=batch_size, 
+        shuffle=True, 
+        num_workers=4,
+        pin_memory=False
+    )
+    val_dataloader = DataLoader(
+        val_dataset, 
+        batch_size=batch_size, 
+        shuffle=False, 
+        num_workers=4,
+        pin_memory=False
+    )
+    return train_dataloader, val_dataloader
+
+def plot_metrics(train_losses, train_accuracies, val_losses, val_accuracies, args):
     epochs = range(1, args.epochs + 1)
     
-    plt.figure(figsize=(12, 5))
+    plt.figure(figsize=(12, 10))
     
     plt.subplot(1, 2, 1)
     plt.plot(epochs, train_losses, 'b-o', label='Train Loss')
+    plt.plot(epochs, val_losses, 'r-o', label='Validation Loss')
     plt.title('Loss Curve during Training')
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.legend()
     
     plt.subplot(1, 2, 2)
-    plt.plot(epochs, train_accuracies, 'r-o', label='Train Accuracy')
+    plt.plot(epochs, train_accuracies, 'b-o', label='Train Accuracy')
+    plt.plot(epochs, val_accuracies, 'r-o', label='Validation Accuracy')
     plt.title('Accuracy Curve during Training')
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
     plt.legend()
     
     plt.tight_layout()
-    plt.savefig("training_metrics.png")
-    plt.savefig("/opt/ml/output/training_metrics.png")
+    plt.savefig(os.path.join(args.checkpoint_dir, "training_metrics.png"))
     plt.show()
-    print("Metrics plot saved as training_metrics.png")  
+    print(f"Metrics plot saved as {os.path.join(args.checkpoint_dir, 'training_metrics.png')}")  
 
 def main(args):
-    # wandb.init(
-    #     project=configs["wandb_project"],
-    #     name=f"lenet_model_{configs['current_time']}",
-    #     config={
-    #         "epochs": args.epochs,
-    #         "batch_size": args.batch_size,
-    #         "learning_rate": configs["learning_rate"]
-    #     }
-    # )
+    wandb.init(
+        project="cad-lenet-alzheimer-brain-classification",
+        mode=args.wandb_mode,
+        name=f"lenet_model_{args.current_time}",
+        config={
+            "epochs": args.epochs,
+            "batch_size": args.batch_size,
+            "learning_rate": args.learning_rate,
+            "num_classes": args.num_classes,
+            "resize": args.resize
+        }
+    )
 
-    train_dataset, val_dataset = create_datasets(args.train, args.val, transformations)
+    os.makedirs(args.checkpoint_dir, exist_ok=True)
+
+    train_dataset, val_dataset = create_datasets(args.train, args.val, args.resize)
     train_dataloader, val_dataloader = create_dataloaders(train_dataset, val_dataset, args.batch_size)
 
-    model = LeNet(num_classes=args.num_classes)
+    model = LeNet(num_classes=args.num_classes, input_size=args.resize)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), args.learning_rate)
-
-    if not os.path.exists("/opt/ml/model"):
-        os.makedirs("/opt/ml/model")
 
     train_loss, train_acc, val_loss, val_acc, val_recall, val_f1 = train_model(model, train_dataloader, criterion, optimizer, device, val_dataloader)
     torch.save(
@@ -266,27 +236,30 @@ def main(args):
         "optimizer_state_dict": optimizer.state_dict(),
         "int_to_label_map": train_dataset.int_to_label_map,  # Add this line
         "num_classes": args.num_classes,  # Add this line
-    }, f"/opt/ml/checkpoints/lenet_model_1.pth")
+    }, f"{args.model_dir}/lenet_model.pth")
 
-    print(f"Model saved as lenet_model_1.pth")
+    print(f"Model saved as lenet_model.pth in model folder")
 
-    plot_metrics(train_loss, train_acc)
-    # wandb.finish()
+    plot_metrics(train_loss, train_acc, val_loss, val_acc, args)
+    wandb.finish()
 
 if __name__ == '__main__':
     
-   
     parser = argparse.ArgumentParser()
     
-    parser.add_argument("--model_name", type=str, default="cad-unet-camvid-segmentation")
+    parser.add_argument("--model_name", type=str, default="cad-lenet-alzheimer-brain-classification")
     parser.add_argument("--epochs", type=int, default=20)   
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--learning_rate", type=float, default=0.001)
-    parser.add_argument("--task", type=str, default="cad-simple-lenet-fashionmist")
+    parser.add_argument("--task", type=str, default="cad-simple-lenet-alzheimer-brain-classification")
     parser.add_argument("--model-dir", type=str, default=os.environ["SM_MODEL_DIR"])
     parser.add_argument("--train", type=str, default=os.environ["SM_CHANNEL_TRAIN"])   
     parser.add_argument("--val", type=str, default=os.environ["SM_CHANNEL_VAL"])   
-    parser.add_argument("--num_classes", type=int, default=10)
+    parser.add_argument("--num_classes", type=int, default=4)
+    parser.add_argument("--resize", type=int, default=224)
+    parser.add_argument("--wandb_mode", type=str, default="offline")
+    parser.add_argument("--checkpoint_dir", type=str, default="/opt/ml/output/checkpoints")
+
     args, _ = parser.parse_known_args()
     args.current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
     

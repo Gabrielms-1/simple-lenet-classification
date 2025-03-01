@@ -10,13 +10,13 @@ class LeNet(nn.Module):
     Parameters:
         num_classes (int): Number of output classes.
     """
-    def __init__(self, num_classes=10):
+    def __init__(self, num_classes=10, input_size=128):
         super(LeNet, self).__init__()
         # First convolutional layer:
         #   - Input: 3 channels (RGB) 32x32
         #   - kernel_size: 5 (5x5 filter)
         #   - Output: 6 channels (number of filters) 28x28 (dimension reduced by kernel_size) with features extracted
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=6, kernel_size=5)
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=6, kernel_size=5)
         
         # Second convolutional layer:
         #   - Input: 6 channels 14x14
@@ -24,10 +24,9 @@ class LeNet(nn.Module):
         #   - kernel_size: 5
         self.conv2 = nn.Conv2d(in_channels=6, out_channels=16, kernel_size=5)
         
-        # Fully-connected layers:
-        # Considering that the input has size 32x32, after two conv + pool operations,
-        # the spatial dimension reduces to 5x5.
-        self.fc1 = nn.Linear(in_features=16 * 5 * 5, out_features=120)
+        # Cálculo correto das dimensões após as operações convolucionais
+        self.feature_size = ((input_size - 4) // 2 - 4) // 2  # (128-4=124→62 →62-4=58→29)
+        self.fc1 = nn.Linear(16 * self.feature_size ** 2, 120)
         self.fc2 = nn.Linear(in_features=120, out_features=84)
         self.fc3 = nn.Linear(in_features=84, out_features=num_classes)
 
@@ -48,9 +47,3 @@ class LeNet(nn.Module):
         x = self.fc3(x) 
         return x
 
-transformations = transforms.Compose([
-    transforms.Resize((32, 32)),   # Resizes the image to 32x32 pixels (original size of LeNet)
-    transforms.ToTensor(),         # Converts the PIL image to a PyTorch tensor with scale [0,1]
-    transforms.Normalize(mean=[0.5, 0.5, 0.5],   # Normalizes the color channels; 
-                         std=[0.5, 0.5, 0.5])    # (mean and std can be adjusted according to the dataset)
-])
