@@ -52,9 +52,29 @@ LeNet(
 
 ## Results
 
+#### Context Update
+While achieving reasonable initial results, the model exhibited overfitting tendencies (train accuracy: 85.2% vs validation accuracy: 71.6%) despite employing:
+- Dropout regularization (rate=0.3)
+- L2 regularization (weight decay=0.0001)
+- Limited model capacity (84 final hidden units)
+
+This experience demonstrates the fundamental challenges of applying classical architectures to complex medical imaging tasks, motivating the next phase of exploring more sophisticated CNN architectures.
+
 #### Hyperparameters
-num_classes = 4
-learning_rate = 0.0001
-epochs = 100
-batch_size = 32
-resize = 32
+num_classes = 4  
+batch_size = 32  
+resize = 32  
+epochs = 100  
+learning_rate = 0.0001  
+weight_decay = 0.0001  
+dropout = 0.3
+
+#### Final Metrics
+Metric        | Training | Validation
+-------------|----------|-----------
+Accuracy     | 0.852    | 0.716
+Loss         | 0.362    | 0.745
+F1-Score     | -        | 0.748
+Recall       | -        | 0.742
+
+![img](runs/training_metrics-9.png)

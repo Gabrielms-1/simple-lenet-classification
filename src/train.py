@@ -219,7 +219,7 @@ def main(args):
     model = LeNet(num_classes=args.num_classes, input_size=args.resize)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
-
+ 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), args.learning_rate, weight_decay=0.0001)
 
