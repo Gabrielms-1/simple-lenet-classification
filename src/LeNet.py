@@ -26,7 +26,9 @@ class LeNet(nn.Module):
         # Cálculo correto das dimensões após as operações convolucionais
         self.feature_size = ((input_size - 4) // 2 - 4) // 2  # (128-4=124→62 →62-4=58→29)
         self.fc1 = nn.Linear(16 * self.feature_size ** 2, 120)
+        self.dropout1 = nn.Dropout(0.3)
         self.fc2 = nn.Linear(in_features=120, out_features=84)
+        self.dropout2 = nn.Dropout(0.3)
         self.fc3 = nn.Linear(in_features=84, out_features=num_classes)
 
     def forward(self, x):
@@ -40,8 +42,10 @@ class LeNet(nn.Module):
         x = x.view(x.size(0), -1)
 
         x = torch.relu(self.fc1(x))
+        x = self.dropout1(x)
 
         x = torch.relu(self.fc2(x))
+        x = self.dropout2(x)
 
         x = self.fc3(x) 
         return x

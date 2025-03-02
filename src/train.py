@@ -221,7 +221,7 @@ def main(args):
     model.to(device)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), args.learning_rate)
+    optimizer = optim.Adam(model.parameters(), args.learning_rate, weight_decay=0.0001)
 
     train_loss, train_acc, val_loss, val_acc, val_recall, val_f1 = train_model(model, train_dataloader, criterion, optimizer, device, val_dataloader)
     torch.save(
