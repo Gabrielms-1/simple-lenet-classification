@@ -8,3 +8,7 @@ wandb/
 *.jpg
 *.jpeg
 *.png
+sagemaker/credentials.ini
+*/credentials.ini
+.cursorrules
+.cursorignore
