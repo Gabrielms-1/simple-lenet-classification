@@ -53,20 +53,24 @@ LeNet(
 ## Results
 
 #### Hyperparameters
-num_classes = 4
-learning_rate = 0.0001
-epochs = 100
-batch_size = 32
-resize = 32
-dropout = 0.3 
-weight_decay = 0.0001
+| Name           | Value   |
+|----------------|--------:|
+| num_classes    | 4       |
+| learning_rate  | 0.0001  |
+| epochs         | 100     |
+| batch_size     | 32      |
+| resize         | 32      |
+| dropout        | 0.3     |
+| weight_decay   | 0.0001  |
 
 #### Metrics
-accuracy 0.85236
-loss 0.36243
-val_accuracy 0.71579
-val_loss 0.74491
-val_f1 0.74757
-val_recall 0.74153
+| Name         | Value    |
+|--------------|---------:|
+| accuracy     | 0.85236  |
+| loss         | 0.36243  |
+| val_accuracy | 0.71579  |
+| val_loss     | 0.74491  |
+| val_f1       | 0.74757  |
+| val_recall   | 0.74153  |
 
 ![img](runs/training_metrics-9.png)
