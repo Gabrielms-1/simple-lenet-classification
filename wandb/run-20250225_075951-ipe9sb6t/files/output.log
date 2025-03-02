@@ -1,0 +1,25 @@
+Backend macosx is interactive backend. Turning interactive mode on.
+Traceback (most recent call last):
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/runpy.py", line 197, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/runpy.py", line 87, in _run_code
+    exec(code, run_globals)
+  File "/Users/gabrielmendessouza/.cursor/extensions/ms-python.debugpy-2024.6.0-darwin-x64/bundled/libs/debugpy/adapter/../../debugpy/launcher/../../debugpy/__main__.py", line 39, in <module>
+    cli.main()
+  File "/Users/gabrielmendessouza/.cursor/extensions/ms-python.debugpy-2024.6.0-darwin-x64/bundled/libs/debugpy/adapter/../../debugpy/launcher/../../debugpy/../debugpy/server/cli.py", line 430, in main
+    run()
+  File "/Users/gabrielmendessouza/.cursor/extensions/ms-python.debugpy-2024.6.0-darwin-x64/bundled/libs/debugpy/adapter/../../debugpy/launcher/../../debugpy/../debugpy/server/cli.py", line 284, in run_file
+    runpy.run_path(target, run_name="__main__")
+  File "/Users/gabrielmendessouza/.cursor/extensions/ms-python.debugpy-2024.6.0-darwin-x64/bundled/libs/debugpy/_vendored/pydevd/_pydevd_bundle/pydevd_runpy.py", line 321, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/Users/gabrielmendessouza/.cursor/extensions/ms-python.debugpy-2024.6.0-darwin-x64/bundled/libs/debugpy/_vendored/pydevd/_pydevd_bundle/pydevd_runpy.py", line 135, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/Users/gabrielmendessouza/.cursor/extensions/ms-python.debugpy-2024.6.0-darwin-x64/bundled/libs/debugpy/_vendored/pydevd/_pydevd_bundle/pydevd_runpy.py", line 124, in _run_code
+    exec(code, run_globals)
+  File "/Users/gabrielmendessouza/Documents/personal_projects/simple-lenet-classification/src/train.py", line 274, in <module>
+    main(args, configs)
+  File "/Users/gabrielmendessouza/Documents/personal_projects/simple-lenet-classification/src/train.py", line 247, in main
+    train_loss, train_acc = train_model(model, train_dataloader, criterion, optimizer, device, val_dataloader)
+  File "/Users/gabrielmendessouza/Documents/personal_projects/simple-lenet-classification/src/train.py", line 123, in train_model
+    labels = labels.to(device)
+AttributeError: 'tuple' object has no attribute 'to'
