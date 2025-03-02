@@ -9,3 +9,4 @@ wandb/
 *.jpeg
 *.png
 sagemaker/credentials.ini
+*/credentials.ini

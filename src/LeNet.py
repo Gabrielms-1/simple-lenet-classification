@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchvision import transforms
 
 class LeNet(nn.Module):
     """
@@ -16,7 +15,7 @@ class LeNet(nn.Module):
         #   - Input: 3 channels (RGB) 32x32
         #   - kernel_size: 5 (5x5 filter)
         #   - Output: 6 channels (number of filters) 28x28 (dimension reduced by kernel_size) with features extracted
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=6, kernel_size=5)
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=6, kernel_size=5)
         
         # Second convolutional layer:
         #   - Input: 6 channels 14x14

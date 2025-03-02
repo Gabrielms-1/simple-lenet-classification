@@ -2,13 +2,13 @@ import sagemaker
 from sagemaker.pytorch import PyTorch
 import configparser
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 network_config = configparser.ConfigParser()
 network_config.read('sagemaker/credentials.ini')  
 
 training_config = configparser.ConfigParser()
 training_config.read('sagemaker/config.ini')
-
 
 sagemaker_session_bucket = training_config['S3']['bucket']
 
@@ -32,13 +32,14 @@ estimator = PyTorch(
         "learning_rate": float(training_config['TRAINING']['learning_rate']),
         "num_classes": int(training_config['TRAINING']['num_classes']),
         "resize": int(training_config['TRAINING']['resize']),
-        "wandb_mode": "offline"
+        "wandb_mode": "online",
     },
     requirements_file="requirements.txt",
-    base_job_name=f"cad-plant-disease-classification-{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}",
+    base_job_name=f"cad-plant-disease-classification",
     output_path="file://data/plant_leaves_disease/models/",
     environment={
         "WANDB_API_KEY": network_config['WANDB']['wandb_api_key'],
+        "WANDB_MODE": "online",
         "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"
     },
     metric_definitions=[

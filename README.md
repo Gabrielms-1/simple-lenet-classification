@@ -1,159 +1,118 @@
-# LeNet Implementation for Fashion MNIST Classification
+# LeNet Implementation for Alzheimer's Disease Classification
 
 ## Overview
-This project demonstrates a PyTorch implementation of the LeNet convolutional neural network for image classification on the Fashion MNIST dataset. The implementation serves as a technical showcase for computer vision workflows, ML engineering practices, and MLOps fundamentals.
+This project implements a LeNet-5 convolutional neural network for classifying Alzheimer's disease stages from brain MRI images. The solution provides a complete MLOps pipeline for medical image analysis, including data preprocessing, model training, evaluation, and deployment.
 
 ## Key Features
-- **LeNet-5 Architecture**: Classic CNN implementation with modern PyTorch conventions
-- **Fashion MNIST Dataset**: Classifies 10 categories of fashion items from 28x28 grayscale images
-- **MLOps Pipeline**:
-  - Training with validation metrics (accuracy, recall, F1-score)
-  - Model checkpointing and saving
-  - Metrics visualization (loss/accuracy curves)
-  - Inference pipeline with results export
-- **Production-ready Features**:
-  - Dataset abstraction with custom DataLoader
-  - GPU acceleration support
-  - Model serialization/deserialization
-  - Comprehensive image preprocessing
+- **Adapted LeNet-5 Architecture**: Customized for 64x64 grayscale medical images
+- **End-to-End MLOps Pipeline**:
+  - S3-based data storage and model artifacts
+  - SageMaker training and deployment
+  - Automated hyperparameter configuration
+  - WandB experiment tracking
+- **Medical Imaging Preprocessing**:
+  - MRI image normalization
+  - Adaptive resizing (64x64 default)
+  - Grayscale conversion
+- **Model Management**:
+  - Multi-class classification (4 stages of Alzheimer's)
+  - Model checkpointing every 10 epoch 
+  - Comprehensive metrics (Accuracy, Recall, F1-Score)
 
 ## Technologies Used
-- **Core ML**: PyTorch, TorchVision, Sagemaker, s3
-- **Data Handling**: pandas, numpy
-- **MLOps**: Model checkpointing, metrics tracking, hyperparameter configuration
+- **Core Framework**: PyTorch 2.2, TorchVision
+- **Cloud Infrastructure**: AWS SageMaker, S3
+- **Data Processing**: NumPy, PIL, Pandas
+- **Experiment Tracking**: Weights & Biases (WandB)
+
+## Dataset
+The Alzheimer's MRI dataset contains preprocessed brain images categorized into 4 classes:
+The dataset was splitted by 70/15/15
+
+| Class                 | Train | Valid | Test | Total |
+|-----------------------|-------|-------|------|-------|
+| VeryMildDemented      | 1840  | 394   | 395  | 2629  |
+| ModerateDemented      | 1303  | 279   | 280  | 1862  |
+| MildDemented          | 1844  | 395   | 396  | 2635  |
+| NonDemented           | 1941  | 416   | 417  | 2774  |
+|-----------------------|-------|-------|------|-------|
+| Total                 | 6928  | 1484  | 1488 | 9900  |
 
 
+**Preprocessing Pipeline:**
+1. Resize to 64x64 pixels
+2. Grayscale conversion
+3. Intensity normalization
+4. S3 storage for distributed training
+
+## Architecture
+Modified LeNet-5 structure for medical imaging:
+
+```python
+LeNet(
+  (conv1): Conv2d(1, 6, kernel_size=(5, 5))
+  (conv2): Conv2d(6, 16, kernel_size=(5, 5))
+  (fc1): Linear(16*29*29, 120)  # Input size 128x128
+  (fc2): Linear(120, 84)
+  (fc3): Linear(84, 4)          # 4 output classes
+)
+```
+
+**Key Adaptations:**
+- Input channels: 1 (grayscale MRI)
+- Final FC layer: 4 neurons for disease stages
+- Adaptive pooling for variable input sizes
+- Batch normalization between layers
+
+## Training Details
+**Hyperparameters** (from config.ini):
+```ini
+learning_rate = 0.0001
+batch_size = 16
+epochs = 50
+resize = 64
+```
+
+**MLOps Features:**
+- Automatic GPU acceleration
+- Model checkpointing to S3
+- Training metrics visualization
+- Model export as TorchScript
 
 ## Results
 
-=== Evaluation Metrics ===
-Epochs: 10
-Learning-rate: 0.001
-Accuracy: 0.8318
-
-Classification Report:
-              precision    recall  f1-score   support
-
-  ankle boot       0.93      0.93      0.93        98
-         bag       0.97      0.94      0.95        98
-        coat       0.72      0.76      0.74        98
-       dress       0.67      0.93      0.78        98
-    pullover       0.73      0.78      0.75        98
-      sandal       0.94      0.94      0.94        98
-       shirt       0.64      0.48      0.55        98
-     sneaker       0.90      0.93      0.92        99
-     trouser       0.99      1.00      0.99        98
-  tshirt_top       0.86      0.64      0.74        98
-
-    accuracy                           0.83       981
-   macro avg       0.84      0.83      0.83       981
-weighted avg       0.84      0.83      0.83       981
-
-
-Confusion Matrix:
-[[91  0  0  0  0  2  0  5  0  0]
- [ 0 92  0  2  1  1  0  1  1  0]
- [ 0  0 74  9  7  0  8  0  0  0]
- [ 0  0  6 91  1  0  0  0  0  0]
- [ 0  1  8  2 76  0 10  0  0  1]
- [ 3  0  0  0  0 92  0  3  0  0]
- [ 0  2 15 10 15  0 47  0  0  9]
- [ 4  0  0  0  0  3  0 92  0  0]
- [ 0  0  0  0  0  0  0  0 98  0]
- [ 0  0  0 22  4  0  8  1  0 63]]
-
-
-=== Evaluation Metrics ===
-Epochs: 50
-Learning-rate: 0.001
-Accuracy: 0.8522
-
-Classification Report:
-              precision    recall  f1-score   support
-
-  ankle boot       0.98      0.91      0.94        98
-         bag       0.95      0.93      0.94        98
-        coat       0.73      0.76      0.74        98
-       dress       0.75      0.87      0.80        98
-    pullover       0.83      0.81      0.82        98
-      sandal       0.92      0.96      0.94        98
-       shirt       0.69      0.62      0.65        98
-     sneaker       0.90      0.94      0.92        99
-     trouser       0.96      0.99      0.97        98
-  tshirt_top       0.83      0.74      0.78        98
-
-    accuracy                           0.85       981
-   macro avg       0.85      0.85      0.85       981
-weighted avg       0.85      0.85      0.85       981
-
-
-Confusion Matrix:
-[[89  0  0  0  0  2  0  7  0  0]
- [ 0 91  1  3  0  1  2  0  0  0]
- [ 0  3 74  8  6  0  7  0  0  0]
- [ 0  0  7 85  2  0  2  0  2  0]
- [ 0  0  9  3 79  0  6  0  0  1]
- [ 1  0  0  0  0 94  0  3  0  0]
- [ 0  2 10  3  6  1 61  0  1 14]
- [ 1  0  0  0  0  4  1 93  0  0]
- [ 0  0  0  1  0  0  0  0 97  0]
- [ 0  0  1 11  2  0 10  0  1 73]]
-
-
-
-
-=== Evaluation Metrics ===
-Epochs: 100
-Learning-rate: 0.001
-Accuracy: 0.8573
-
-Classification Report:
-              precision    recall  f1-score   support
-
-  ankle boot       0.96      0.94      0.95        98
-         bag       0.94      0.93      0.93        98
-        coat       0.74      0.84      0.78        98
-       dress       0.81      0.85      0.83        98
-    pullover       0.82      0.78      0.80        98
-      sandal       0.93      0.95      0.94        98
-       shirt       0.67      0.54      0.60        98
-     sneaker       0.91      0.92      0.91        99
-     trouser       0.94      0.99      0.97        98
-  tshirt_top       0.83      0.85      0.84        98
-
-    accuracy                           0.86       981
-   macro avg       0.85      0.86      0.85       981
-weighted avg       0.85      0.86      0.85       981
-
-
-
-
-
 
 ## Usage
-### Training
+1. **Training:**
 ```bash
 python src/train.py \
-    --epochs 20 \
-    --batch_size 32 \
-    --learning_rate 0.001 \
-    --num_classes 10
+  --train s3://cad-brbh-datascience/alzheimer_images/train/ \
+  --val s3://cad-brbh-datascience/alzheimer_images/valid/ \
+  --num_classes 4 \
+  --resize 64
 ```
 
-### Evaluation
+2. **Evaluation:**
 ```bash
 python src/evaluate.py \
-    --image_dir path/to/images \
-    --model_path path/to/checkpoint.pth \
-    --save_dir results/
+  --model_path model/checkpoint_20.pth \
+  --image_dir data/alzheimer/valid \
+  --batch_size 32
 ```
 
-## Development Setup
-```bash
-pip install -r requirements
+3. **SageMaker Deployment:**
+```python
+estimator = PyTorch(
+    entry_point='train.py',
+    instance_type='ml.p3.2xlarge',
+    framework_version='2.2',
+    hyperparameters={
+        'epochs': 50,
+        'batch_size': 16,
+        'num_classes': 4
+    }
+)
 ```
 
-## Acknowledgments
-- Original LeNet paper: [Gradient-Based Learning Applied to Document Recognition](http://yann.lecun.com/exdb/publis/pdf/lecun-01a.pdf)
-- Fashion MNIST dataset: [Repository](https://github.com/zalandoresearch/fashion-mnist)
-
+## License
+This project is intended for research purposes only. Clinical use requires additional validation and certification.

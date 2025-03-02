@@ -5,7 +5,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-import time
 import wandb
 from sklearn.metrics import recall_score, f1_score
 import os
@@ -50,7 +49,7 @@ def train_model(model, dataloader, criterion, optimizer, device, val_dataloader)
     """
     Function that executes the training loop.
     
-    Parameters:
+    Parameters: 
         model (nn.Module): Model to be trained.
         dataloader (DataLoader): DataLoader with training data.
         criterion: Loss function.
@@ -93,7 +92,7 @@ def train_model(model, dataloader, criterion, optimizer, device, val_dataloader)
         train_losses.append(epoch_loss)
         train_accuracies.append(epoch_acc)
         
-        print(f"Epoch {i+1}/{args.epochs}, Loss: {epoch_loss:.4f}, Accuracy: {epoch_acc:.4f}")
+        
 
         val_loss, val_acc, val_recall, val_f1 = evaluate_model(model, val_dataloader, criterion, device)
         val_losses.append(val_loss)
@@ -108,9 +107,12 @@ def train_model(model, dataloader, criterion, optimizer, device, val_dataloader)
             "val_recall": val_recall,
             "val_f1": val_f1
         })
-
-        print(f"Validation Loss: {val_loss:.4f}, Validation Accuracy: {val_acc:.4f}, Validation Recall: {val_recall:.4f}, Validation F1: {val_f1:.4f}")
-
+        # print metris in a table format    
+        print("-"*100)
+        print(f"Epoch {i+1}/{args.epochs}")
+        print(f"Metrics: Loss: {epoch_loss:.4f}, Accuracy: {epoch_acc:.4f}")
+        print(f"Metrics: Validation Loss: {val_loss:.4f}, Validation Accuracy: {val_acc:.4f},  Recall: {val_recall:.4f},  F1: {val_f1:.4f}")
+        print("-"*100)
         if (i + 1) % 10 == 0:
             torch.save(
                 {
@@ -122,13 +124,13 @@ def train_model(model, dataloader, criterion, optimizer, device, val_dataloader)
                     "val_accuracy": val_acc,
                     "optimizer_state_dict": optimizer.state_dict(),
                 }, 
-                os.path.join(args.checkpoint_dir, f"lenet_model_{i+1}.pth")
+                os.path.join(args.checkpoint_dir, f"checkpoint_{i+1}.pth")
             )
-            print(f"Checkpoint {i+1} saved as {os.path.join(args.checkpoint_dir, f'lenet_model_{i+1}.pth')}")
+            print(f"Checkpoint {i+1} saved as {os.path.join(args.checkpoint_dir, f'checkpoint_{i+1}.pth')}")
 
         if val_f1 > best_f1:
             best_f1 = val_f1
-            checkpoint_path = os.path.join(args.checkpoint_dir, "lenet_model_best_f1.pth")
+            best_checkpoint_path = os.path.join(args.checkpoint_dir, "checkpoint_best_f1.pth")
             torch.save(
                 {
                     "model_state_dict": model.state_dict(), 
@@ -140,10 +142,9 @@ def train_model(model, dataloader, criterion, optimizer, device, val_dataloader)
                     "optimizer_state_dict": optimizer.state_dict(), 
                     "wandb_config": wandb.config
                 }, 
-                checkpoint_path
+                best_checkpoint_path
             )
-            print(f"Best F1 checkpoint saved as {checkpoint_path}")
-
+            print(f"Best F1 checkpoint saved as {best_checkpoint_path}")
 
     return train_losses, train_accuracies, val_losses, val_accuracies, val_recall, val_f1
 
@@ -200,7 +201,7 @@ def main(args):
     wandb.init(
         project="cad-lenet-alzheimer-brain-classification",
         mode=args.wandb_mode,
-        name=f"lenet_model_{args.current_time}",
+        name=f"lenet_model_{args.model_name}",
         config={
             "epochs": args.epochs,
             "batch_size": args.batch_size,
@@ -240,6 +241,9 @@ def main(args):
 
     print(f"Model saved as lenet_model.pth in model folder")
 
+    print("Model directory contents (args.model_dir):", os.listdir(args.model_dir))
+    print("Checkpoint directory contents (args.checkpoint_dir):", os.listdir(args.checkpoint_dir))
+    print("Output folder contents:", os.listdir("/opt/ml/output/"))
     plot_metrics(train_loss, train_acc, val_loss, val_acc, args)
     wandb.finish()
 
@@ -258,9 +262,9 @@ if __name__ == '__main__':
     parser.add_argument("--num_classes", type=int, default=4)
     parser.add_argument("--resize", type=int, default=224)
     parser.add_argument("--wandb_mode", type=str, default="offline")
-    parser.add_argument("--checkpoint_dir", type=str, default="/opt/ml/output/checkpoints")
+    parser.add_argument("--checkpoint_dir", type=str, default="/opt/ml/checkpoints")
 
     args, _ = parser.parse_known_args()
-    args.current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
+
     
     main(args)

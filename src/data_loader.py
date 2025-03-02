@@ -49,10 +49,10 @@ class FolderBasedDataset(Dataset):
 
     def get_transformations(self):
         transformations = transforms.Compose([
-            transforms.Resize((self.resize, self.resize)),   # Resizes the image to 32x32 pixels (original size of LeNet)
+            transforms.Resize((self.resize, self.resize), interpolation=transforms.InterpolationMode.LANCZOS),   # Resizes the image to 32x32 pixels (original size of LeNet)
             transforms.ToTensor(),  
-            transforms.Grayscale(num_output_channels=1),       # Converts the PIL image to a PyTorch tensor with scale [0,1]
-            # transforms.Normalize(mean=[0.5, 0.5, 0.5],   # Normalizes the color channels; 
-            #                 std=[0.5, 0.5, 0.5])    # (mean and std can be adjusted according to the dataset)
+            # transforms.Grayscale(num_output_channels=1),       # Converts the PIL image to a PyTorch tensor with scale [0,1]
+            transforms.Normalize(mean=[0.5, 0.5, 0.5],   # Normalizes the color channels; 
+                             std=[0.5, 0.5, 0.5])    # (mean and std can be adjusted according to the dataset)
             ])
         return transformations
